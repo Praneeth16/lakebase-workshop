@@ -8,6 +8,9 @@ Two ways to set a value (env var wins over the inline default):
   1. Edit the default string on the right of each ``env(...)`` call below, or
   2. Export the matching ``LB_*`` / ``WS_*`` environment variable.
 
+Note: set values by editing this file when you run the notebooks. A variable exported inside a
+notebook cell is lost when a notebook calls ``%restart_python``, so edit the defaults here instead.
+
 Nothing here is a secret — these are resource identifiers, not credentials.
 Database credentials are minted at run time via the Databricks CLI/SDK and are
 never stored in this repo.
@@ -48,7 +51,7 @@ _VALID_SCALES = ("lab", "demo")
 @dataclass
 class Config:
     # --- Databricks connection --------------------------------------------
-    profile: str = field(default_factory=lambda: env("LB_PROFILE", "fe-vm-lakebase-praneeth"))
+    profile: str = field(default_factory=lambda: env("LB_PROFILE", "REPLACE_ME_profile"))
 
     # --- Lakebase project (copy straight out of `databricks postgres` output)
     project_id: str = field(default_factory=lambda: env("LB_PROJECT_ID", "REPLACE_ME_project_id"))

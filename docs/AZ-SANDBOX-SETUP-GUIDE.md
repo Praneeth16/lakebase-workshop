@@ -19,7 +19,7 @@ Self-serve, browser-native. From an empty workspace to a working agent-memory ba
 | Generation model `databricks-meta-llama-3-3-70b-instruct` | Confirm access | endpoint is `READY` |
 | **Lakebase Search Beta**, module 04 only | Account-team request + admin Previews toggle | **Irreversible per project** |
 | `databricks-sdk >= 0.81.0` | Each notebook `%pip` installs it | runtime SDK is older; notebooks upgrade + restart |
-| `databricks-feature-engineering >= 0.13.0`, DBR 16.4 LTS ML or serverless, module 05 | `%pip` in notebook |, |
+| `databricks-feature-engineering >= 0.13.0`, DBR 16.4 LTS ML or serverless (module 05) | `%pip` in notebook | serving endpoint is READY |
 
 ---
 
@@ -52,7 +52,7 @@ databricks postgres list-endpoints projects/<PROJECT_ID>/branches/production --p
 ## 2 · Edit `workshop/config.py`, the only file you change
 
 Set `project_id`, `search_project_id`, `uc_catalog`, `uc_schema`, `warehouse_id`, `team_id`.
-Each also accepts an `LB_*` / `WS_*` env var. Confirm with `cfg.show()`; `cfg.validate()` lists
+For notebook runs, edit the defaults in `config.py` (a variable exported in a cell is lost on `%restart_python`). Confirm with `cfg.show()`; `cfg.validate()` lists
 every problem at once. Nothing here is a secret, DB credentials are minted at run time.
 
 ---
@@ -131,4 +131,4 @@ Postgres DB name. It does **not** scale to zero, delete it in teardown (`99_tear
 | Connection refused right after idle | Scale-to-zero wake, retry |
 | `Workshop config is not ready …` | Run `cfg.validate()`, fix every listed item |
 
-Full detail: `docs/TROUBLESHOOTING.md`, `docs/RUNBOOK.md`, `docs/GOVERNANCE-CHECKLIST.md`.
+Full detail: `docs/TROUBLESHOOTING.md`, `docs/RUNBOOK.md`.

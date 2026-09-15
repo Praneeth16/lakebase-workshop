@@ -57,8 +57,7 @@ print("database:", rows[0][1], "| role:", rows[0][2])
 # MAGIC - **Autoscaling** 0.5–32 CU dynamic (fixed 36–112). Constraint: **max − min ≤ 16 CU**.
 # MAGIC - **Scale-to-zero** is on by default; wake is ~100 ms; apps must retry through the wake
 # MAGIC   (the connection helper already does).
-# MAGIC - AstraZeneca's own Peptides onboarding recommends a **30–60 minute idle timeout** for
-# MAGIC   scale-to-zero workloads — we use your recommendation back to you rather than a generic one.
+# MAGIC - A **30 to 60 minute idle timeout** is a reasonable default for scale-to-zero workloads.
 # MAGIC - **OAuth database credentials expire after one hour.** The helper mints a fresh credential
 # MAGIC   on every connect, so a notebook idle over lunch reconnects cleanly instead of failing auth.
 # MAGIC

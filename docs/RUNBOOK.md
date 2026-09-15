@@ -29,13 +29,11 @@ In the UI: **Compute → Lakebase → Go to Lakebase Postgres** (`/lakebase/proj
 The create dialog confirms what you get: a `production` branch, `8↔16 CU` with scale-to-zero, a
 `databricks_postgres` database, Postgres 17.
 
-![Lakebase projects list](screenshots/01-lakebase-projects-list.png)
-![New project dialog](screenshots/02-create-project-dialog.png)
 
 Equivalent CLI (what the session automation uses):
 
 ```bash
-# application project (the session pre-provisions one of these per team)
+# shared application project (the session pre-provisions one for the room; each builder owns a schema)
 databricks postgres create-project az-<team>-copilot \
   --json '{"spec": {"display_name": "AZ Copilot <team>"}}' --profile <PROFILE>
 
@@ -54,7 +52,7 @@ databricks postgres list-endpoints projects/<PROJECT_ID>/branches/production --p
 ## 2 · Edit `workshop/config.py`, the only file you change
 
 Set `project_id`, `search_project_id`, `uc_catalog`, `uc_schema`, `warehouse_id`, and `team_id`.
-Each also accepts a `LB_*` / `WS_*` environment variable. Run `python workshop/config.py` (or
+For notebook runs, edit the defaults in `config.py` (a variable exported in a cell is lost on `%restart_python`). Run `python workshop/config.py` (or
 `cfg.show()` in a notebook) to confirm resolved values; `cfg.validate()` lists every problem at
 once.
 
@@ -113,13 +111,12 @@ computes, makes `lakebase_vector` / `lakebase_text` available, and **cannot be t
 enabled**. Then: `CREATE EXTENSION lakebase_vector CASCADE;` `CREATE EXTENSION lakebase_text;`. If
 `CREATE EXTENSION` fails, check the project's `shared_preload_libraries` (see TROUBLESHOOTING).
 
-![Lakebase Search enable, one-way door](screenshots/06-lakebase-search-enable-warning.png)
 
 **Online store + serving endpoint** (module 05), `fe.create_online_store(name=..., capacity="CU_2")`
 provisions its **own** Lakebase instance; the UC catalog name must equal that instance's Postgres
 database name or the serving endpoint silently fails to deploy. The one-time model + endpoint
-lifecycle (run before the session; the endpoint deploy is slow, so it is pre-provisioned per
-checklist B4 rather than built live):
+lifecycle (run before the session; the endpoint deploy is slow, so it is pre-provisioned before
+the room rather than built live):
 
 ```python
 from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
@@ -137,8 +134,7 @@ rather than presenting a swallowed failure as a success.
 ## 6 · Tear down
 
 Run `workshop/99_teardown.py`. It defaults to `DRY_RUN = True` (lists only). Set `False` to delete.
-**The online feature store does not scale to zero, deleting it is step 1**, or it bills
-indefinitely.
+**The online feature store does not scale to zero. Delete it first**, or it bills indefinitely.
 
 ---
 

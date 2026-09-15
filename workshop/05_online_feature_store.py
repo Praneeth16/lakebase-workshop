@@ -2,9 +2,9 @@
 # MAGIC %md
 # MAGIC # 05 · Online Feature Store — publish → serve → keys-only 200 (DEMO)
 # MAGIC
-# MAGIC Closes the gap AstraZeneca's own February 2026 evaluation left open, in their words: features
-# MAGIC available for inference in **under one minute**, with no option evaluated for the online tier.
-# MAGIC This module is the answer to a question they already wrote down.
+# MAGIC Serves features for inference in **under one minute**, the online tier a batch-only feature
+# MAGIC pipeline cannot meet. This is the online serving path for a model that needs fresh features at
+# MAGIC request time.
 # MAGIC
 # MAGIC **Status: GA** — the only GA pillar of the three, which is why it should be weighted
 # MAGIC differently from Search and managed memory.
@@ -120,7 +120,7 @@ except Exception as e:
 # MAGIC The model is logged with a `FeatureLookup`, so the serving endpoint fetches features from the
 # MAGIC online store at request time and the request carries **only the primary key**.
 # MAGIC
-# MAGIC The serving endpoint is **pre-provisioned** for the session (checklist B4) because an endpoint
+# MAGIC The serving endpoint is **pre-provisioned** for the session because an endpoint
 # MAGIC deploy takes far longer than a demo slot. The one-time provisioning lifecycle —
 # MAGIC `fe.create_training_set(df, feature_lookups, label=...)` → `fe.log_model(...)` → register to
 # MAGIC UC → `w.serving_endpoints.create(...)` — is documented in `docs/RUNBOOK.md` for your replay.
@@ -150,7 +150,7 @@ ready = ep.state.ready.value if ep.state and ep.state.ready else "UNKNOWN"
 if ready != "READY":
     raise RuntimeError(
         f"{SERVING_ENDPOINT} is not READY (state={ready}). Stand it up per docs/RUNBOOK.md / "
-        "checklist B4 before running this demo — do not present a swallowed failure as success.")
+        "before running this demo — do not present a swallowed failure as success.")
 
 resp = w.serving_endpoints.query(
     name=SERVING_ENDPOINT,
@@ -159,14 +159,14 @@ print("✅ 200 — keys-only request scored:", resp.as_dict())
 
 # COMMAND ----------
 
-# MAGIC %md ## What breaks in production — drawn from real accounts
+# MAGIC %md ## What breaks in production
 # MAGIC - **`No online tables found for required feature tables`** — the #1 serving failure: the
 # MAGIC   feature table was never published online. Teach *offline for training, online for serving,
 # MAGIC   you need both*.
 # MAGIC - **Mixed backend formats** for one model's feature tables — rejected outright.
 # MAGIC - **Connection-pool ceiling `max(3, min(10, num_tables))`** — ten connections per pod
-# MAGIC   regardless of table count; adding feature tables pushed lookups to 500–800 ms and a capacity
-# MAGIC   upgrade did **not** help. The pool-size env var is a *candidate*, not a confirmed fix.
+# MAGIC   regardless of table count; adding feature tables can raise lookup latency, and a capacity
+# MAGIC   upgrade does not necessarily help. The pool-size env var is a *candidate*, not a confirmed fix.
 # MAGIC - **Online Tables** are past deprecation and never reached GA — the forward path is this
 # MAGIC   Lakebase-backed online store. "Supersedes Online Tables" is true; "supersedes the legacy
 # MAGIC   online store" is too strong (third-party online stores remain supported).

@@ -1,7 +1,7 @@
 # Troubleshooting
 
 Keyed to the **literal error string** so it is searchable at the moment of failure. Ctrl-F the
-text you see. Dry-run errors get appended here with their exact text, those are the ones
+text you see. Dry-run errors get appended here with their exact text. Those are the ones
 the room will actually hit.
 
 ---
@@ -110,8 +110,8 @@ Index built before rows were loaded.
 
 ### DAB `synced_database_tables` resource fails
 Deprecated; maps to a legacy API that fails on current Lakebase.
-**Fix:** use `databricks postgres create-synced-table` instead. `postgres_synced_tables` DAB
-support is not yet available.
+**Fix:** create synced tables from the Catalog UI (see the entry above); the CLI and DAB paths are
+broken on current Autoscaling Lakebase.
 
 ### Branch reset has no CLI/API
 Reset is **UI-only**. There is no `databricks postgres reset-branch`.

@@ -24,7 +24,7 @@ from any production system.
   and build alongside a facilitator. Start at `workshop/00_validate_environment.py`.
 - **Unattended replay.** You (an AstraZeneca engineer) reproduce the whole workshop in your own
   workspace after the session. Start with **`docs/RUNBOOK.md`**, which begins one step earlier than
-  the session does, it includes creating the Lakebase project the session pre-provisions for you.
+  the session does. It includes creating the Lakebase project the session pre-provisions for you.
 
 Either way, **the only file you edit is `workshop/config.py`.**
 
@@ -35,11 +35,12 @@ Either way, **the only file you edit is `workshop/config.py`.**
 1. **Clone into a Databricks Git folder** (the repo root goes on `sys.path`, so
    `from workshop.config import cfg` works from any notebook).
 2. **Edit `workshop/config.py`**, set your Lakebase project id, Unity Catalog catalog/schema, and
-   SQL warehouse id. Every value can also come from a `LB_*` / `WS_*` environment variable.
+   SQL warehouse id. Edit the defaults in `config.py` for notebook runs (a variable exported in a
+   cell is lost when a notebook calls `%restart_python`).
 3. **Generate the data:** run `data/generate_synthetic_pharma.py` once. It writes six tables into
    your configured catalog/schema.
 4. **Validate:** run `workshop/00_validate_environment.py`. It prints one pass/fail row per
-   prerequisite and **never aborts**, you see every gap at once, not one at a time.
+   prerequisite. It runs every check before it fails, so you see every gap at once, not one at a time.
 5. **Build in order:** `01` → `02` → `03` → `03b`, then the demos `04` and `05`.
 6. **Tear down:** run `workshop/99_teardown.py` so nothing is left billing.
 
@@ -53,7 +54,7 @@ reader always knows whether a step succeeded or failed silently.
 ```
 workshop/
   config.py                     THE portability contract, the only file you edit
-  00_validate_environment.py    pass/fail table; runs first; blocks nothing
+  00_validate_environment.py    pass/fail table; runs every check, then fails at the end if any red
   01_fundamentals.py            hierarchy, connect, first queries, cost posture
   02_synced_tables.py           UC → Lakebase mirror; sync modes; read-only rule
   03_agent_memory_build.py      HANDS-ON CORE: schema → write → recall → scope isolation
@@ -65,13 +66,10 @@ workshop/
 data/
   generate_synthetic_pharma.py  in-workspace generator, scale-parameterized, deterministic
 docs/
+  BUILDER-LAB-GUIDE.md          day-of checklist for participants (also as PDF)
+  AZ-SANDBOX-SETUP-GUIDE.md     one-time admin setup, empty workspace to working backend
   RUNBOOK.md                    the portable tutorial, the replay path
-  AGENDA.md                     customer-facing two-day agenda
-  AZ-PLATFORM-SETUP-CHECKLIST.md   what the AstraZeneca platform team does before demo day
-  GOVERNANCE-CHECKLIST.md       project creation, naming, branch lifecycle, scale-down
   TROUBLESHOOTING.md            keyed to literal error strings
-  RUN-OF-SHOW.md                facilitator timings, cut-list, ownership
-  screenshots/                  UI walkthrough for the control-plane steps (create project, branch reset, governance settings, Search enable, serving)
 ```
 
 ## Capability status, stated honestly
