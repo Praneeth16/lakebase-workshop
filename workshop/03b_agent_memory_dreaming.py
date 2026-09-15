@@ -27,7 +27,7 @@ import sys
 sys.path.insert(0, "..")
 from workshop.config import cfg
 from workshop import lakebase
-cfg.validate()
+cfg.validate(required=frozenset())  # core module: no Search/Feature-Store/warehouse config needed
 S = cfg.app_schema
 CONF_THRESHOLD = 0.6           # facts below this go to the review queue, not the agent
 HIGH_STAKES = ("interaction_claim", "dosing", "safety")
@@ -135,7 +135,11 @@ for rep_id, hcp_id, topic, n, turn_ids, sample in clusters:
             cur.execute(f"""INSERT INTO "{S}".agent_facts (source_key, rep_id, hcp_id, scope, fact_text, confidence, status)
                             VALUES (%s,%s,%s,'hcp',%s,%s,%s)
                             ON CONFLICT (source_key) DO UPDATE
-                              SET fact_text=EXCLUDED.fact_text, confidence=EXCLUDED.confidence, status=EXCLUDED.status
+                              SET fact_text=EXCLUDED.fact_text, confidence=EXCLUDED.confidence,
+                                  -- never let a re-run resurrect an archived fact or auto-approve one a
+                                  -- human moved to review; only re-score facts still in the machine lane
+                                  status=CASE WHEN "{S}".agent_facts.status IN ('review','archived')
+                                              THEN "{S}".agent_facts.status ELSE EXCLUDED.status END
                             RETURNING fact_id""",
                         (source_key, rep_id, hcp_id, fact, round(conf, 3), status))
             fid = cur.fetchone()[0]

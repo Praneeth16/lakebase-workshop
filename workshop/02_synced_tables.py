@@ -22,7 +22,7 @@ import sys
 sys.path.insert(0, "..")
 from workshop.config import cfg
 from workshop import lakebase
-cfg.validate()
+cfg.validate(required=frozenset())  # core module: no Search/Feature-Store/warehouse config needed
 
 # COMMAND ----------
 

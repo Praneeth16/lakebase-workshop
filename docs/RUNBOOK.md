@@ -119,14 +119,46 @@ lifecycle (run before the session; the endpoint deploy is slow, so it is pre-pro
 the room rather than built live):
 
 ```python
+import mlflow, time
+from pyspark.sql import functions as F
+from sklearn.linear_model import LogisticRegression
 from databricks.feature_engineering import FeatureEngineeringClient, FeatureLookup
-fe = FeatureEngineeringClient()
-lookups = [FeatureLookup(table_name="<catalog>.<schema>.hcp_features", lookup_key="hcp_id",
-           feature_names=["engagement_90d","days_since_last_interaction","propensity_score"])]
-ts = fe.create_training_set(df=<labelled_df>, feature_lookups=lookups, label="label")
-fe.log_model(model=<trained_model>, artifact_path="copilot_propensity",
-             flavor=mlflow.sklearn, training_set=ts, registered_model_name="<catalog>.<schema>.copilot_propensity")
-# then create a serving endpoint for that registered model (w.serving_endpoints.create(...))
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.serving import (
+    EndpointCoreConfigInput, ServedEntityInput)
+
+CATALOG, SCHEMA = "<catalog>", "<schema>"
+MODEL = f"{CATALOG}.{SCHEMA}.copilot_propensity"
+ENDPOINT = "<serving-endpoint-name>"          # matches WS_SERVING_ENDPOINT in config.py
+fe = FeatureEngineeringClient(); w = WorkspaceClient()
+
+# 1. label frame: keys + a synthetic binary label (replace with a real label when you have one)
+labelled = (spark.table(f"{CATALOG}.{SCHEMA}.hcp_features")
+              .select("hcp_id")
+              .withColumn("label", (F.rand(seed=42) > 0.5).cast("int")))
+
+# 2. training set = label frame + features looked up from the feature table
+lookups = [FeatureLookup(table_name=f"{CATALOG}.{SCHEMA}.hcp_features", lookup_key="hcp_id",
+           feature_names=["engagement_90d", "days_since_last_interaction", "propensity_score"])]
+ts = fe.create_training_set(df=labelled, feature_lookups=lookups, label="label", exclude_columns=["hcp_id"])
+pdf = ts.load_df().toPandas()
+X, y = pdf.drop(columns=["label"]).fillna(0), pdf["label"]
+
+# 3. train + log with the training set so the endpoint auto-looks-up features from keys only
+model = LogisticRegression(max_iter=1000).fit(X, y)
+with mlflow.start_run():
+    fe.log_model(model=model, artifact_path="copilot_propensity", flavor=mlflow.sklearn,
+                 training_set=ts, registered_model_name=MODEL)
+
+# 4. create the serving endpoint and wait for READY (this is the slow step; pre-provision it)
+from mlflow.tracking import MlflowClient
+mlflow.set_registry_uri("databricks-uc")
+latest = max(int(v.version) for v in MlflowClient().search_model_versions(f"name='{MODEL}'"))
+w.serving_endpoints.create(name=ENDPOINT, config=EndpointCoreConfigInput(
+    served_entities=[ServedEntityInput(entity_name=MODEL, entity_version=str(latest),
+                     workload_size="Small", scale_to_zero_enabled=True)]))
+while w.serving_endpoints.get(ENDPOINT).state.ready.value != "READY":
+    time.sleep(20)
 ```
 Module 05 itself is **fail-closed**: it checks the endpoint is `READY` and errors clearly if not,
 rather than presenting a swallowed failure as a success.

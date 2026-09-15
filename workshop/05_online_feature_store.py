@@ -22,7 +22,7 @@
 import sys
 sys.path.insert(0, "..")
 from workshop.config import cfg
-cfg.validate()
+cfg.validate(required={"ofs"})
 
 ONLINE_STORE = cfg.online_store_name                    # its OWN Lakebase instance (see note below)
 SERVING_ENDPOINT = cfg.feature_serving_endpoint
@@ -80,13 +80,16 @@ from databricks.feature_engineering import FeatureEngineeringClient
 from databricks.sdk.errors import NotFound
 fe = FeatureEngineeringClient()
 
-# get-or-create — idempotent, and only "not found" leads to a create (no fail-open swallow)
+# fail-closed: the store is pre-provisioned before the session. create_online_store is too slow
+# to run live and the store does not scale to zero, so we never create it here — we require it.
 try:
     online_store = fe.get_online_store(name=ONLINE_STORE)
-    print(f"online store {ONLINE_STORE} already exists")
+    print(f"online store {ONLINE_STORE} found (pre-provisioned)")
 except NotFound:
-    online_store = fe.create_online_store(name=ONLINE_STORE, capacity="CU_2")
-    print(f"created online store {ONLINE_STORE} (CU_2)")
+    raise RuntimeError(
+        f"online store {ONLINE_STORE} not found. It is pre-provisioned before the session "
+        "(create_online_store is too slow to run live and does not scale to zero). Stand it up "
+        "per docs/RUNBOOK.md, set LB_ONLINE_STORE, then re-run this demo.")
 
 # COMMAND ----------
 

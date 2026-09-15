@@ -22,9 +22,21 @@ sys.path.insert(0, "..")
 from workshop.config import cfg
 
 DRY_RUN = True                 # <-- set False to actually delete
+CONFIRM = ""                   # <-- to delete for real, set DRY_RUN=False AND CONFIRM=cfg.team_id
 DROP_UC_DATA = False           # <-- set True only if you also want the synthetic UC tables gone
-ONLINE_STORE = f"az_workshop_online_{cfg.team_id}"
-SERVING_ENDPOINT = f"az-copilot-propensity-{cfg.team_id}"
+ONLINE_STORE = cfg.online_store_name
+SERVING_ENDPOINT = cfg.feature_serving_endpoint
+
+# Show exactly what will be deleted, and refuse a real run unless the operator confirms the team id.
+print("Teardown targets:")
+print("  online store     :", ONLINE_STORE)
+print("  serving endpoint :", SERVING_ENDPOINT)
+print("  app schema       :", cfg.app_schema, "(on project", cfg.project_id + ")")
+print("  search schema    : search_demo (on project", cfg.search_project_id + ")")
+if not DRY_RUN and CONFIRM != cfg.team_id:
+    raise RuntimeError(
+        f"Refusing to delete. Set CONFIRM='{cfg.team_id}' to confirm you are tearing down team "
+        f"'{cfg.team_id}'. This guards against deleting another team's resources with stale config.")
 
 _errors = []
 

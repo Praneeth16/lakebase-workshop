@@ -74,6 +74,9 @@ class Config:
     # --- Workshop knobs ---------------------------------------------------
     team_id: str = field(default_factory=lambda: env("WS_TEAM_ID", "team01"))
     dataset_scale: str = field(default_factory=lambda: env("WS_DATASET_SCALE", "lab"))
+    # Feature Store (module 05): shared, facilitator-provisioned. Set to the pre-provisioned names.
+    online_store_name: str = field(default_factory=lambda: env("LB_ONLINE_STORE", "REPLACE_ME_online_store"))
+    feature_serving_endpoint: str = field(default_factory=lambda: env("WS_SERVING_ENDPOINT", "REPLACE_ME_serving_endpoint"))
 
     # ---- Derived resource paths (mirror the `databricks postgres` CLI shape)
     @property
@@ -98,16 +101,6 @@ class Config:
         return f"copilot_{self.team_id}"
 
     @property
-    def online_store_name(self) -> str:
-        """Online Feature Store instance (its OWN Lakebase instance), one per team."""
-        return f"az_workshop_online_{self.team_id}"
-
-    @property
-    def feature_serving_endpoint(self) -> str:
-        """Model-serving endpoint that looks features up from the online store."""
-        return f"az-copilot-propensity-{self.team_id}"
-
-    @property
     def uc_path(self) -> str:
         return f"{self.uc_catalog}.{self.uc_schema}"
 
@@ -116,7 +109,7 @@ class Config:
         return f"{self.uc_catalog}.{self.uc_schema}.{name}"
 
     # ---- Validation: no network calls, report EVERY problem at once -------
-    def problems(self) -> list[str]:
+    def problems(self, required=frozenset({"search", "warehouse", "ofs"})) -> list[str]:
         errs: list[str] = []
 
         def unset(v: str) -> bool:
@@ -129,11 +122,12 @@ class Config:
             errs.append(f"project_id '{self.project_id}' is not a valid Lakebase id "
                         "(lowercase letter start; lowercase/digits/hyphen; <=63 chars).")
 
-        if unset(self.search_project_id):
-            errs.append("search_project_id is not set — the dedicated Lakebase Search demo project. "
-                        "Set LB_SEARCH_PROJECT_ID. (Only needed for module 04.)")
-        elif not _RFC1123.match(self.search_project_id):
-            errs.append(f"search_project_id '{self.search_project_id}' is not a valid Lakebase id.")
+        if "search" in required:
+            if unset(self.search_project_id):
+                errs.append("search_project_id is not set — the dedicated Lakebase Search demo project. "
+                            "Set LB_SEARCH_PROJECT_ID. (Only needed for module 04.)")
+            elif not _RFC1123.match(self.search_project_id):
+                errs.append(f"search_project_id '{self.search_project_id}' is not a valid Lakebase id.")
 
         for name in ("branch", "endpoint_id"):
             val = getattr(self, name)
@@ -146,9 +140,14 @@ class Config:
                 errs.append(f"{name} '{val}' is not a valid Unity Catalog identifier "
                             "(letters/digits/underscore, no leading digit).")
 
-        if unset(self.warehouse_id):
+        if "warehouse" in required and unset(self.warehouse_id):
             errs.append("warehouse_id is not set — set WS_WAREHOUSE_ID "
-                        "(from `databricks warehouses list`). Needed to query UC from SQL.")
+                        "(from `databricks warehouses list`). Needed by module 00's warehouse check.")
+        if "ofs" in required:
+            for nm in ("online_store_name", "feature_serving_endpoint"):
+                if unset(getattr(self, nm)):
+                    errs.append(f"{nm} is not set — module 05 uses the shared, pre-provisioned "
+                                "Feature Store. Set LB_ONLINE_STORE / WS_SERVING_ENDPOINT.")
 
         if not _TEAM_ID.match(self.team_id):
             errs.append(f"team_id '{self.team_id}' is not a safe identifier — lowercase letter start, "
@@ -168,8 +167,8 @@ class Config:
 
         return errs
 
-    def validate(self) -> "Config":
-        errs = self.problems()
+    def validate(self, required=frozenset({"search", "warehouse", "ofs"})) -> "Config":
+        errs = self.problems(required)
         if errs:
             bullets = "\n".join(f"  - {e}" for e in errs)
             raise ValueError(

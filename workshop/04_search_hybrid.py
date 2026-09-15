@@ -26,7 +26,7 @@ import sys
 sys.path.insert(0, "..")
 from workshop.config import cfg
 from workshop import lakebase
-cfg.validate()
+cfg.validate(required={"search"})
 SS = "search_demo"   # schema on the Search demo project
 
 # COMMAND ----------
@@ -163,8 +163,11 @@ def search(query_text, brand_filter=None, k=5):
     return lakebase.run(sql, params, conn=conn)
 
 print("Hybrid search: 'how should CARDIOVYX be stored?' (brand-filtered)")
-for row in search("how should the medicine be stored", brand_filter="CARDIOVYX"):
+_hits = search("how should the medicine be stored", brand_filter="CARDIOVYX")
+for row in _hits:
     print("  ", row)
+assert _hits, ("hybrid search returned no rows for the brand-filtered query — check the corpus "
+               "loaded and the Search extensions are enabled on this project")
 
 # COMMAND ----------
 

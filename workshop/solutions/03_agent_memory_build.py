@@ -225,9 +225,16 @@ prov = lakebase.run(f'SELECT count(*) FROM "{S}".fact_provenance')[0][0]
 linked = lakebase.run(f"""SELECT count(*) FROM "{S}".agent_facts f
                           JOIN "{S}".fact_provenance p ON p.fact_id = f.fact_id
                           JOIN "{S}".agent_turns t ON t.turn_id = p.turn_id""")[0][0]
+# assert the SPECIFIC hand-promoted fact is joined to a REP-001 dosing turn, not just that
+# some fact from any producer happens to be linked (which would pass vacuously)
+promoted = lakebase.run(f"""SELECT count(*) FROM "{S}".agent_facts f
+                            JOIN "{S}".fact_provenance p ON p.fact_id = f.fact_id
+                            JOIN "{S}".agent_turns t ON t.turn_id = p.turn_id
+                            WHERE f.source_key = 'handpromote:REP-001:HCP-0007:dosing'
+                              AND f.rep_id = 'REP-001' AND t.rep_id = 'REP-001' AND t.topic = 'dosing'""")[0][0]
 print("facts:", facts)
-print("provenance links:", prov, "| fact→turn joins:", linked)
-assert facts and linked >= 1, "expected at least one fact joined to its source turn via provenance"
+print("provenance links:", prov, "| fact→turn joins:", linked, "| hand-promoted REP-001 fact linked:", promoted)
+assert promoted >= 1, "the hand-promoted REP-001 dosing fact is not joined to a REP-001 dosing turn"
 print("✅ agent memory works: committed, recallable, scope-isolated, with provenance")
 
 # COMMAND ----------
