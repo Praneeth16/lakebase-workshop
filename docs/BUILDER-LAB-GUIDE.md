@@ -49,21 +49,24 @@ In the workspace: **Workspace → your home → Create → Git folder**, point i
 This puts every notebook plus `workshop/config.py` on your path. You run everything from here in the
 browser; nothing installs on your laptop.
 
-### 3. Set the one value that is yours
+### 3. Set your values in config.py
 
-Every notebook reads its workspace settings from `workshop/config.py`. The shared values
-(project id, catalog, warehouse) are already filled in for the room. **You change exactly one thing:
-your team id**, which becomes your private schema `copilot_<your-id>`.
+Every notebook reads its workspace settings from `workshop/config.py`. This is the only file you
+edit. Open it in your Git folder and set these values, then save.
 
-Set it as an environment variable so you never edit the shared file. In the first cell of any
-notebook, or in a notebook-scoped env, set:
+- **The shared values your facilitator gives you.** Fill in `project_id` (the shared Lakebase
+  project), `search_project_id` (the Search demo project), `warehouse_id`, `uc_catalog`, and
+  `uc_schema`. Everyone in the room uses the same values for these.
+- **Your own team id.** Set `team_id` to your initials (lowercase letters and digits, starts with a
+  letter, e.g. `psk`). This becomes your private schema `copilot_<your-id>`, so nobody writes to
+  anybody else's tables.
 
-```python
-import os
-os.environ["WS_TEAM_ID"] = "psk"   # your initials, lowercase letters/digits, starts with a letter
-```
+Edit the file on disk. Do not try to set these through environment variables in a notebook cell.
+The notebooks call `%restart_python` in their first cell to upgrade the SDK, and that restart clears
+any environment variable you set in a cell, so the value would be lost before the notebook reads it.
+A value saved in `config.py` survives the restart.
 
-Then confirm what you resolved:
+Then confirm what you set:
 
 ```python
 import sys; sys.path.insert(0, "..")
@@ -72,9 +75,9 @@ cfg.show()        # prints every resolved value as a table
 cfg.validate()    # fails fast and lists every problem at once, no network calls
 ```
 
-`cfg.show()` should print your `app_schema` as `copilot_psk` (with your id), the shared
-`project_id`, your workshop catalog, and the running warehouse. If `validate()`
-lists a problem, fix that line before you run anything else. A green `validate()` is your gate.
+`cfg.show()` should print your `app_schema` as `copilot_<your-id>`, the shared `project_id`, your
+workshop catalog, and the warehouse. If `validate()` lists a problem, fix that line in `config.py`
+before you run anything else. A green `validate()` is your gate.
 
 ### 4. Run the environment validator
 
