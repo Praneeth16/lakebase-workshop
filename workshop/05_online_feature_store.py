@@ -28,7 +28,10 @@ ONLINE_STORE = cfg.online_store_name                    # its OWN Lakebase insta
 SERVING_ENDPOINT = cfg.feature_serving_endpoint
 SOURCE = cfg.table("hcp_features")
 FEATURE_TABLE = SOURCE                                  # offline source of truth in UC
-ONLINE_TABLE = cfg.table("hcp_features_online")
+# The online table's UC catalog MUST equal the online store's backing Postgres DB name, or the
+# serving endpoint fails to deploy. publish_table creates that catalog by default, so name the
+# online table in a catalog matching the store (cfg.online_store_name), not the source catalog.
+ONLINE_TABLE = f"{cfg.online_store_name}.{cfg.uc_schema}.hcp_features_online"
 
 # COMMAND ----------
 
