@@ -63,8 +63,8 @@ class Config:
     search_project_id: str = field(default_factory=lambda: env("LB_SEARCH_PROJECT_ID", "REPLACE_ME_search_project_id"))
 
     # --- Unity Catalog (synthetic data lands here; also OFS source of truth)
-    uc_catalog: str = field(default_factory=lambda: env("WS_UC_CATALOG", "az_workshop"))
-    uc_schema: str = field(default_factory=lambda: env("WS_UC_SCHEMA", "lakebase_session"))
+    uc_catalog: str = field(default_factory=lambda: env("WS_UC_CATALOG", "sandbox_users_catalog"))
+    uc_schema: str = field(default_factory=lambda: env("WS_UC_SCHEMA", "users_lab_schema"))
 
     # --- Compute ----------------------------------------------------------
     warehouse_id: str = field(default_factory=lambda: env("WS_WAREHOUSE_ID", "REPLACE_ME_warehouse_id"))
