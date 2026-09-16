@@ -58,7 +58,7 @@ def _():
 # 3 — Config shape (no network)
 @check("config.py resolved and valid")
 def _():
-    probs = cfg.problems()
+    probs = cfg.problems(required=frozenset({"warehouse"}))  # 00 checks warehouse + core; not Search/Feature-Store
     return (len(probs) == 0), ("all values set" if not probs else "; ".join(probs))
 
 
